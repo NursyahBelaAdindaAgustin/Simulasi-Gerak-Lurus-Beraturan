@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Gerak Lurus Beraturan (GLB) - Mobil Interaktif</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #eaf6ff;
+    text-align: center;
+  }
+
+  h2 {
+    margin-top: 20px;
+  }
+
+  #area {
+    position: relative;
+    width: 900px;
+    height: 220px;
+    margin: 30px auto;
+    background: linear-gradient(#c9f5b3, #98e089);
+    border: 2px solid #555;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  #jalan {
+    position: absolute;
+    bottom: 50px;
+    width: 100%;
+    height: 10px;
+    background-color: #333;
+  }
+
+  #mobil {
+    position: absolute;
+    bottom: 60px;
+    left: 100px;
+    font-size: 60px;
+    transition: left 0.2s linear;
+  }
+
+  .kontrol {
+    margin: 15px;
+  }
+
+  input[type="number"], input[type="range"] {
+    width: 100px;
+    margin-left: 10px;
+  }
+
+  #info {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  canvas {
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin: 10px;
+  }
+
+  table {
+    margin: 20px auto;
+    border-collapse: collapse;
+    width: 70%;
+    background-color: #ffffff;
+  }
+
+  table, th, td {
+    border: 1px solid #888;
+  }
+
+  th {
+    background-color: #b3d9ff;
+  }
+
+  td, th {
+    padding: 6px;
+    text-align: center;
+  }
+
+  button {
+    margin: 4px;
+    padding: 8px 15px;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+
+  #mulai { background-color: #4CAF50; color: white; }
+  #berhenti { background-color: #ff9800; color: white; }
+  #reset { background-color: #f44336; color: white; }
+</style>
+</head>
+<body>
+
+<h2>🚗 Simulasi Gerak Lurus Beraturan (GLB) - Mobil Interaktif</h2>
+
+<div id="area">
+  <div id="jalan"></div>
+  <div id="mobil">🚗</div>
+</div>
+
+<div class="kontrol">
+  <label>Posisi awal (m): </label>
+  <input type="number" id="posisiAwal" value="0" step="0.1">
+  <label>Kecepatan (m/s): </label>
+  <input type="number" id="kecepatanAwal" value="2" step="0.1">
+</div>
+
+<div class="kontrol">
+  <button id="mulai">▶ Mulai</button>
+  <button id="berhenti">⏸ Berhenti</button>
+  <button id="reset">🔄 Reset</button>
+</div>
+
+<div id="info">
+  Waktu: <span id="waktu">0.0</span> s | Posisi: <span id="posisi">0.0</span> m
+</div>
+
+<h3>📈 Grafik Posisi–Waktu dan Kecepatan–Waktu</h3>
+<canvas id="grafikPosisi" width="400" height="200"></canvas>
+<canvas id="grafikKecepatan" width="400" height="200"></canvas>
+
+<h3>📋 Tabel Pengamatan</h3>
+<table id="tabelData">
+  <thead>
+    <tr>
+      <th>No</th>
+      <th>Waktu (s)</th>
+      <th>Posisi (m)</th>
+      <th>Kecepatan (m/s)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const mobil = document.getElementById("mobil");
+  const posisiAwalInput = document.getElementById("posisiAwal");
+  const kecepatanAwalInput = document.getElementById("kecepatanAwal");
+  const waktuTeks = document.getElementById("waktu");
+  const posisiTeks = document.getElementById("posisi");
+  const mulaiBtn = document.getElementById("mulai");
+  const berhentiBtn = document.getElementById("berhenti");
+  const resetBtn = document.getElementById("reset");
+  const tabelBody = document.querySelector("#tabelData tbody");
+
+  let posisi = 0;
+  let kecepatan = 2;
+  let waktu = 0;
+  let berjalan = false;
+  let interval;
+  const skala = 30; // 1 m ≈ 30 px
+
+  let dataWaktu = [];
+  let dataPosisi = [];
+  let dataKecepatan = [];
+
+  // === Grafik dengan Chart.js ===
+  const ctx1 = document.getElementById('grafikPosisi').getContext('2d');
+  const ctx2 = document.getElementById('grafikKecepatan').getContext('2d');
+
+  const chartPosisi = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Posisi (m)',
+        data: [],
+        borderColor: 'blue',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: 'Waktu (s)' }},
+        y: { title: { display: true, text: 'Posisi (m)' }}
+      }
+    }
+  });
+
+  const chartKecepatan = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Kecepatan (m/s)',
+        data: [],
+        borderColor: 'red',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: 'Waktu (s)' }},
+        y: { title: { display: true, text: 'Kecepatan (m/s)' }}
+      }
+    }
+  });
+
+  function updateSimulasi() {
+    waktu += 0.2;
+    posisi += kecepatan * 0.2;
+
+    mobil.style.left = (posisi * skala + 100) + "px";
+    waktuTeks.textContent = waktu.toFixed(1);
+    posisiTeks.textContent = posisi.toFixed(2);
+
+    dataWaktu.push(waktu.toFixed(1));
+    dataPosisi.push(posisi.toFixed(2));
+    dataKecepatan.push(kecepatan.toFixed(2));
+
+    // update grafik
+    chartPosisi.data.labels = dataWaktu;
+    chartPosisi.data.datasets[0].data = dataPosisi;
+    chartPosisi.update();
+
+    chartKecepatan.data.labels = dataWaktu;
+    chartKecepatan.data.datasets[0].data = dataKecepatan;
+    chartKecepatan.update();
+
+    // update tabel
+    const row = tabelBody.insertRow();
+    row.insertCell(0).textContent = dataWaktu.length;
+    row.insertCell(1).textContent = waktu.toFixed(1);
+    row.insertCell(2).textContent = posisi.toFixed(2);
+    row.insertCell(3).textContent = kecepatan.toFixed(2);
+
+    if (posisi * skala + 100 > 900) {
+      berhentiSimulasi();
+    }
+  }
+
+  function mulaiSimulasi() {
+    if (!berjalan) {
+      berjalan = true;
+      // ambil nilai awal dari input
+      posisi = parseFloat(posisiAwalInput.value);
+      kecepatan = parseFloat(kecepatanAwalInput.value);
+      mobil.style.left = (posisi * skala + 100) + "px";
+      interval = setInterval(updateSimulasi, 200);
+    }
+  }
+
+  function berhentiSimulasi() {
+    berjalan = false;
+    clearInterval(interval);
+  }
+
+  function resetSimulasi() {
+    berhentiSimulasi();
+    waktu = 0;
+    dataWaktu = [];
+    dataPosisi = [];
+    dataKecepatan = [];
+    tabelBody.innerHTML = "";
+    chartPosisi.data.labels = [];
+    chartPosisi.data.datasets[0].data = [];
+    chartKecepatan.data.labels = [];
+    chartKecepatan.data.datasets[0].data = [];
+    chartPosisi.update();
+    chartKecepatan.update();
+    posisi = parseFloat(posisiAwalInput.value);
+    mobil.style.left = (posisi * skala + 100) + "px";
+    waktuTeks.textContent = "0.0";
+    posisiTeks.textContent = posisi.toFixed(2);
+  }
+
+  mulaiBtn.addEventListener("click", mulaiSimulasi);
+  berhentiBtn.addEventListener("click", berhentiSimulasi);
+  resetBtn.addEventListener("click", resetSimulasi);
+
+  // posisi awal mobil
+  mobil.style.left = "100px";
+</script>
+
+</body>
+</html>
