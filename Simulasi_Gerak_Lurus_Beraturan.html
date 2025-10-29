@@ -212,13 +212,6 @@
     waktu += 0.2;
     posisi += kecepatan * 0.2;
 
-    // ubah arah mobil sesuai arah kecepatan
-    if (kecepatan >= 0) {
-      mobil.style.transform = "scaleX(1)";
-    } else {
-      mobil.style.transform = "scaleX(-1)";
-    }
-
     mobil.style.left = (posisi * skala + 100) + "px";
     waktuTeks.textContent = waktu.toFixed(1);
     posisiTeks.textContent = posisi.toFixed(2);
@@ -227,6 +220,7 @@
     dataPosisi.push(posisi.toFixed(2));
     dataKecepatan.push(kecepatan.toFixed(2));
 
+    // update grafik
     chartPosisi.data.labels = dataWaktu;
     chartPosisi.data.datasets[0].data = dataPosisi;
     chartPosisi.update();
@@ -235,13 +229,14 @@
     chartKecepatan.data.datasets[0].data = dataKecepatan;
     chartKecepatan.update();
 
+    // update tabel
     const row = tabelBody.insertRow();
     row.insertCell(0).textContent = dataWaktu.length;
     row.insertCell(1).textContent = waktu.toFixed(1);
     row.insertCell(2).textContent = posisi.toFixed(2);
     row.insertCell(3).textContent = kecepatan.toFixed(2);
 
-    if (posisi * skala + 100 > 900 || posisi * skala + 100 < 0) {
+    if (posisi * skala + 100 > 900) {
       berhentiSimulasi();
     }
   }
@@ -249,10 +244,10 @@
   function mulaiSimulasi() {
     if (!berjalan) {
       berjalan = true;
+      // ambil nilai awal dari input
       posisi = parseFloat(posisiAwalInput.value);
       kecepatan = parseFloat(kecepatanAwalInput.value);
       mobil.style.left = (posisi * skala + 100) + "px";
-      mobil.style.transform = (kecepatan >= 0) ? "scaleX(1)" : "scaleX(-1)";
       interval = setInterval(updateSimulasi, 200);
     }
   }
@@ -279,17 +274,15 @@
     mobil.style.left = (posisi * skala + 100) + "px";
     waktuTeks.textContent = "0.0";
     posisiTeks.textContent = posisi.toFixed(2);
-    mobil.style.transform = "scaleX(1)";
   }
 
   mulaiBtn.addEventListener("click", mulaiSimulasi);
   berhentiBtn.addEventListener("click", berhentiSimulasi);
   resetBtn.addEventListener("click", resetSimulasi);
 
+  // posisi awal mobil
   mobil.style.left = "100px";
-  mobil.style.transform = "scaleX(1)";
 </script>
 
 </body>
 </html>
-
