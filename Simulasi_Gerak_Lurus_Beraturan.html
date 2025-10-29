@@ -211,13 +211,6 @@
   function updateSimulasi() {
     waktu += 0.2;
     posisi += kecepatan * 0.2;
-
-    // ubah arah mobil sesuai arah kecepatan
-    if (kecepatan >= 0) {
-      mobil.style.transform = "scaleX(1)";
-    } else {
-      mobil.style.transform = "scaleX(-1)";
-    }
     
     mobil.style.left = (posisi * skala + 100) + "px";
     waktuTeks.textContent = waktu.toFixed(1);
@@ -293,4 +286,5 @@
 
 </body>
 </html>
+
 
