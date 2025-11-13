@@ -101,7 +101,7 @@
     <label>Kecepatan (m/s):</label>
     <input type="number" id="kecepatan" value="3" step="0.5">
     <button onclick="mulai()">Mulai</button>
-    <button id="berhenti">Berhenti</button>
+    <button onclick="berhenti()">Berhenti</button>
     <button onclick="resetSimulasi()">Reset</button>
   </div>
 
@@ -168,23 +168,23 @@
     });
 
     function mulai() {
-      resetSimulasi(false);
+      if (jalan) return; // Cegah klik ganda
       posisi = parseFloat(document.getElementById("posisiAwal").value);
       kecepatan = parseFloat(document.getElementById("kecepatan").value);
-      waktuMulai = performance.now();
+      waktuMulai = performance.now() - waktu * 1000; // lanjut dari waktu terakhir
       jalan = true;
-      requestAnimationFrame(updateSimulasi);
+      animasi = requestAnimationFrame(updateSimulasi);
     }
 
     function updateSimulasi(timestamp) {
       if (!jalan) return;
       const deltaWaktu = (timestamp - waktuMulai) / 1000;
-      waktu = deltaWaktu.toFixed(2);
+      waktu = deltaWaktu;
       posisi = parseFloat(document.getElementById("posisiAwal").value) + kecepatan * deltaWaktu;
 
       const xPixel = posisi * 10;
       mobil.style.left = xPixel + "px";
-      koordinat.innerHTML = `(${posisi.toFixed(2)} m, ${waktu}s)`;
+      koordinat.innerHTML = `(${posisi.toFixed(2)} m, ${waktu.toFixed(2)} s)`;
       koordinat.style.left = (xPixel + 10) + "px";
 
       // Update setiap detik ke tabel dan grafik
@@ -209,6 +209,11 @@
         jalan = false;
         cancelAnimationFrame(animasi);
       }
+    }
+
+    function berhenti() {
+      jalan = false;
+      cancelAnimationFrame(animasi);
     }
 
     function resetSimulasi(clearAll = true) {
